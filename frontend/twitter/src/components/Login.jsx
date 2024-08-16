@@ -38,6 +38,7 @@ const Login = () => {
         toast.success(error.response.data.message);
         console.log(error);
       }
+      
     } else {
       try {
         const res = await axios.post(
