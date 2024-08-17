@@ -2,29 +2,83 @@ import Tweet  from '../modules/tweetSchema.js';
 
 import  User  from "../modules/userSchema.js";
 
-export const createTweet = async (req, res) => {
-    try {
-        const { description, id } = req.body;
-        if (!description || !id) {
-            return res.status(401).json({
-                message: "Fields are required.",
-                success: false
-            });
-        };
-        const user = await User.findById(id).select("-password");
-        await Tweet.create({
-            description,
-            userId:id,
-            userDetails:user
-        });
-        return res.status(201).json({
-            message:"Tweet created successfully.",
-            success:true,
-        })
-    } catch (error) {
-        console.log(error);
+
+import multer from 'multer';
+import path from "path"
+
+
+// Set up storage engine for Multer
+const storage = multer.diskStorage({
+    destination: './uploads/',
+    filename: function (req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+    }
+});
+
+// Initialize upload middleware
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 1MB
+    fileFilter: function (req, file, cb) {
+        checkFileType(file, cb);
+    }
+}).single('image');
+
+// Check file type function
+function checkFileType(file, cb) {
+    const filetypes = /jpeg|jpg|png|gif/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+        return cb(null, true);
+    } else {
+        cb('Error: Images Only!');
     }
 }
+
+export const createTweet = async (req, res) => {
+    try {
+        upload(req, res, async (err) => {
+            if (err) {
+                return res.status(400).json({ error: err });
+            }
+
+            const { description, id } = req.body;
+            if (!description || !id) {
+                return res.status(401).json({
+                    message: "Fields are required.",
+                    success: false
+                });
+            }
+
+            const user = await User.findById(id).select("-password");
+
+            const newTweet = new Tweet({
+                description,
+                image: req.file ? `/uploads/${req.file.filename}` : null,
+                userId: id,
+                userDetails: user,
+               
+            });
+
+            await newTweet.save();
+
+            return res.status(201).json({
+                message: "Tweet created successfully.",
+                success: true,
+                tweet: newTweet
+            });
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "Server error.",
+            success: false
+        });
+    }
+};
+
 
 export const deleteTweet = async (req,res) => {
     try {

@@ -8,6 +8,10 @@ const tweetSchema = new Schema({
     required: true,
     maxlength: 280, // Assuming a maximum length similar to Twitter
   },
+  image: {
+    type: String, // This will store the image URL or file path
+    required: false
+},
   likes: {
     type: [Schema.Types.ObjectId],  // Ensure it's an array of ObjectIds
     default: [],

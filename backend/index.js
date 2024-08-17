@@ -4,10 +4,13 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import userRoute from './routes/userRoute.js';
 import tweetRoute from './routes/tweetRoute.js';
-import cors from 'cors'
+import cors from 'cors';
 
 const app = express();
 dotenv.config({ path: ".env" });
+app.use('/uploads', express.static('uploads'));
+// Set up storage engine
+
 
 // middlewares
 app.use(express.urlencoded({ extended: true }));
